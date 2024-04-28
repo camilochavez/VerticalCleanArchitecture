@@ -1,0 +1,31 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.SignalR.Client
+@using SLinkUser.Host.Hub
+@inject IUserImporter UserImporter;
+<p style="font-weight: bold; color: darkblue">@((MarkupString)ChangingText)</p>
+
+@code {
+    public string ChangingText = string.Empty;
+    [Inject] NavigationManager NavigationManager { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        var connection = new HubConnectionBuilder()
+
+        .WithUrl(NavigationManager.ToAbsoluteUri("/signalr-messaging"))
+        .Build();
+
+        connection.On<DateTime>(
+            nameof(IUserImportCommand.NotifyUserImportAsync),
+            HandleNotificationUserImportAsync);
+
+        await connection.StartAsync();
+
+        await base.OnInitializedAsync();
+    }
+
+    private async void HandleNotificationUserImportAsync(DateTime dateTimeFired)
+    {
+        ChangingText += $"<br/>Last time users were refreshed @ {dateTimeFired.ToString(CultureInfo.InvariantCulture)}";
+        await InvokeAsync(StateHasChanged);
+    }
+}
